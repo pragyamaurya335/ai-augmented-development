@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DSA Visualizer - Synchronized Algorithm & Code Viewer</title>
+  <meta name="description" content="Interactive browser-enabled DSA visualizer featuring synchronized algorithm execution and code viewer.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-badge">CLI & Web</span>
+        <h1>DSA Visualizer <span class="accent-text">Interactive</span></h1>
+      </div>
+      <div class="header-status">
+        <span class="status-indicator"></span>
+        <span id="headerStatusText">Milestone 1 Active</span>
+      </div>
+    </header>
+
+    <!-- Main Dual-Panel Workspace -->
+    <main class="workspace">
+      <!-- Left Panel: Visualization -->
+      <section class="panel visualizer-panel" id="visualizerPanel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="panel-icon">📊</span>
+            <h2>[1] Data Structure / Algorithm Visualization</h2>
+          </div>
+          <span class="panel-tag cyan">Visualizer</span>
+        </div>
+        <div class="panel-body" id="visualizerContent">
+          <div class="welcome-box">
+            <h3>=== Milestone 1: Visualizer Panel Ready ===</h3>
+            <p class="desc">This panel dynamically renders data structures:</p>
+            <ul class="features-list">
+              <li><strong>Sorting Algorithms:</strong> Visual array bars with comparison/swap highlights.</li>
+              <li><strong>Graph Algorithms:</strong> BFS / DFS traversal paths with live queue/stack state.</li>
+              <li><strong>AVL Trees:</strong> Hierarchical 2D ASCII branches & rotation states.</li>
+            </ul>
+            
+            <div class="sample-preview">
+              <div class="preview-title">Sample Array Bar Preview:</div>
+              <div class="bars-container" id="sampleBars">
+                <div class="bar-row">
+                  <span class="bar-index">[0]</span>
+                  <span class="bar-val">4</span>
+                  <div class="bar-fill" style="width: 40px;"></div>
+                </div>
+                <div class="bar-row comparing">
+                  <span class="bar-index">[1]</span>
+                  <span class="bar-val">8</span>
+                  <div class="bar-fill" style="width: 80px;"></div>
+                  <span class="action-tag yellow">Comparing</span>
+                </div>
+                <div class="bar-row comparing">
+                  <span class="bar-index">[2]</span>
+                  <span class="bar-val">2</span>
+                  <div class="bar-fill" style="width: 20px;"></div>
+                  <span class="action-tag yellow">Comparing</span>
+                </div>
+                <div class="bar-row">
+                  <span class="bar-index">[3]</span>
+                  <span class="bar-val">6</span>
+                  <div class="bar-fill" style="width: 60px;"></div>
+                </div>
+                <div class="bar-row sorted">
+                  <span class="bar-index">[4]</span>
+                  <span class="bar-val">9</span>
+                  <div class="bar-fill" style="width: 90px;"></div>
+                  <span class="action-tag green">Sorted</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: Code Viewer -->
+      <section class="panel code-panel" id="codePanel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="panel-icon">💻</span>
+            <h2>[2] Algorithm Code Viewer</h2>
+          </div>
+          <span class="panel-tag yellow">Synchronized</span>
+        </div>
+        <div class="panel-body" id="codeViewerContent">
+          <div class="code-container" id="codeContainer">
+            <!-- Code lines injected via app.js -->
+          </div>
+          <div class="explanation-box" id="explanationBox">
+            <div class="explanation-title">💡 Operation Explanation:</div>
+            <div class="explanation-text" id="explanationText">
+              Currently comparing arr[j] and arr[j + 1]. The active line pointer advances in real-time synchronized with the visualizer!
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Controls & Status Bar -->
+    <footer class="control-bar" id="controlBar">
+      <div class="controls-group">
+        <button id="btnPlayPause" class="btn btn-primary" title="Toggle Play / Pause (Space)">
+          <span class="btn-icon" id="playIcon">▶</span>
+          <span id="playLabel">Play</span>
+        </button>
+        <button id="btnPrev" class="btn btn-secondary" title="Previous Step (Left Arrow)">
+          <span>◀</span> Prev
+        </button>
+        <button id="btnNext" class="btn btn-secondary" title="Next Step (Right Arrow)">
+          Next <span>▶</span>
+        </button>
+        <button id="btnReset" class="btn btn-secondary" title="Reset (R)">
+          <span>↺</span> Reset
+        </button>
+        <div class="speed-control">
+          <span class="speed-label">Speed:</span>
+          <button class="speed-btn" data-speed="0.5">0.5x</button>
+          <button class="speed-btn active" data-speed="1.0">1.0x</button>
+          <button class="speed-btn" data-speed="2.0">2.0x</button>
+        </div>
+      </div>
+
+      <div class="stats-group">
+        <div class="stat-badge">
+          <span class="stat-name">Step:</span>
+          <span class="stat-val yellow" id="statStep">1/18</span>
+        </div>
+        <div class="stat-badge">
+          <span class="stat-name">Comparisons:</span>
+          <span class="stat-val cyan" id="statComparisons">3</span>
+        </div>
+        <div class="stat-badge">
+          <span class="stat-name">Swaps:</span>
+          <span class="stat-val magenta" id="statSwaps">1</span>
+        </div>
+        <div class="stat-badge status-pill" id="statState">
+          [PAUSED]
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -34,6 +34,7 @@ function testKeyExit(keyToSend, keyName) {
 
 async function runAll() {
   await testKeyExit('q', 'q key');
+  await testKeyExit('Q', 'Q key (uppercase)');
   await testKeyExit('\x03', 'Ctrl+C');
   console.log('🎉 All interactive keyboard quit tests passed!\n');
   process.exit(0);

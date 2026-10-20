@@ -27,8 +27,9 @@ export function createScreenManager(options = {}) {
    * If width is 80 or above, use side-by-side layout (55% visualizer, 45% code).
    */
   function handleResize(forcedDims = {}) {
-    const cols = forcedDims.cols ?? screen.cols ?? (process.stdout.columns || 80);
-    const rows = forcedDims.rows ?? screen.rows ?? (process.stdout.rows || 24);
+    const dims = forcedDims || {};
+    const cols = dims.cols ?? (screen.cols > 1 ? screen.cols : (process.stdout.columns || 80));
+    const rows = dims.rows ?? (screen.rows > 1 ? screen.rows : (process.stdout.rows || 24));
 
     if (cols < 80) {
       // Narrow screen: Stacked Layout
@@ -82,8 +83,8 @@ export function createScreenManager(options = {}) {
     process.exit(0);
   }
 
-  // Register global quit keys (q, Q, and Ctrl+C)
-  screen.key(['q', 'Q', 'C-c'], cleanExit);
+  // Register global quit keys (q, Q, Shift+Q, and Ctrl+C)
+  screen.key(['q', 'Q', 'S-q', 'C-c'], cleanExit);
 
   return {
     screen,

@@ -81,6 +81,15 @@ export function createCodePanel(screen) {
     },
 
     /**
+     * Updates the label at the top of the box border
+     * @param {string} label - New panel title
+     */
+    setLabel(label) {
+      widget.setLabel(` ${label} `);
+      screen.render();
+    },
+
+    /**
      * Sets raw content directly in the panel
      * @param {string} text - Formatted content
      */

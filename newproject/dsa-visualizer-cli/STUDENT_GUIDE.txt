@@ -13,7 +13,11 @@ Welcome! If you are a student learning JavaScript, Node.js, and Data Structures 
 6. [How the Browser (Web) Version Works](#6-how-the-browser-web-version-works)
 7. [Why and How We Wrote Automated Tests](#7-why-and-how-we-wrote-automated-tests)
 8. [Commands Cheat Sheet](#8-commands-cheat-sheet)
-9. [What We Will Build in Milestone 2](#9-what-we-will-build-in-milestone-2)
+9. [How Milestone 2 Works: The Playback Engine](#9-how-milestone-2-works-the-playback-engine)
+10. [How Future Algorithms Provide Snapshots](#10-how-future-algorithms-provide-snapshots)
+11. [How Milestone 3 Works: The Sorting Algorithms Suite](#11-how-milestone-3-works-the-sorting-algorithms-suite)
+12. [Algorithm Comparison Matrix](#12-algorithm-comparison-matrix)
+13. [What Comes Next in Milestone 4](#13-what-comes-next-in-milestone-4)
 
 ---
 
@@ -52,7 +56,7 @@ We enabled this by setting `"type": "module"` in `package.json`.
 ### 3. TUI (Terminal User Interface)
 - A regular CLI just prints text line-by-line (like running `console.log`).
 - A **TUI** turns the terminal into an interactive dashboard with bordered boxes, colors, and live keyboard interaction (like pressing `q` to quit or arrows to navigate).
-
+ 
 ### 4. What is `neo-blessed`?
 `neo-blessed` is a Node.js library that manages terminal windows. It gives you "widgets" (boxes, buttons, text areas) and lets you position them using percentages (like `width: '55%'`).
 
@@ -69,21 +73,39 @@ dsa-visualizer-cli/
 ├── index.js                  # The main launcher for the Terminal (CLI) version
 ├── server.js                 # The local Web Server that serves the Browser version
 │
-├── src/                      # Source code for the Terminal CLI
-│   └── ui/
-│       ├── screenManager.js  # The "brain" coordinating the terminal screen & resizing
-│       ├── visualizerPanel.js# Left box (where bars, graphs & trees will show)
-│       ├── codePanel.js      # Right box (code viewer with line numbers & pointer)
-│       └── controlBar.js     # Bottom box (controls & counters)
+├── src/                      # Source code for the application
+│   ├── algorithms/           # Algorithm implementations & snapshot generators (Milestone 3)
+│   │   └── sorting/
+│   │       ├── bubbleSort.js     # Bubble Sort implementation & generator
+│   │       ├── selectionSort.js  # Selection Sort implementation & generator
+│   │       ├── insertionSort.js  # Insertion Sort implementation & generator
+│   │       ├── mergeSort.js      # Merge Sort implementation & generator
+│   │       ├── quickSort.js      # Quick Sort implementation & generator
+│   │       └── index.js          # Registry of all sorting algorithms & randomizer
+│   │
+│   ├── engine/               # Core playback and snapshot engine (Milestone 2)
+│   │   ├── timeline.js           # Manages ordered snapshots and navigation
+│   │   └── playbackController.js # Manages play/pause timer, speed, & events
+│   │
+│   ├── data/                 # Demonstration datasets
+│   │   └── sampleBubbleSort.js   # Deterministic sample steps
+│   │
+│   └── ui/                   # Terminal user interface widgets (Milestone 1)
+│       ├── screenManager.js      # Coordinates terminal screen, resizing, and exit
+│       ├── visualizerPanel.js    # Left box (array bars, graphs, & tree states)
+│       ├── codePanel.js          # Right box (code viewer with active pointer & explanation)
+│       └── controlBar.js         # Bottom box (controls, counters, & status)
 │
 ├── public/                   # Files for the Browser (Web) version
 │   ├── index.html            # Web page structure
 │   ├── style.css             # Dark-theme styling & glassmorphism
 │   └── app.js                # Browser interactivity & animation logic
 │
-└── test/                     # Automated tests verifying our code works
+└── test/                     # Automated test suites
     ├── milestone1.test.js    # Tests layout boxes, resizing & getters
-    └── keyPressExit.test.js  # Tests that pressing 'q' or 'Ctrl+C' exits cleanly
+    ├── keyPressExit.test.js  # Tests that pressing 'q', 'Q', or 'Ctrl+C' exits cleanly
+    ├── milestone2.test.js    # Tests timeline, playback loop, speed, & UI sync
+    └── milestone3.test.js    # Tests all 5 sorting algorithms & switching
 ```
 
 ---
@@ -243,21 +265,199 @@ Run these commands in PowerShell inside your project folder (`c:\Users\coding\De
 | **Run all Automated Tests** | `npm.cmd test` |
 | **Check Git status** | `git status` |
 
+### 🕹️ Interactive Terminal Keybindings
+| Key | Action |
+| :--- | :--- |
+| **`[Space]`** | Play / Pause automatic step animation |
+| **`[→]` / `[N]`** | Step forward one snapshot |
+| **`[←]` / `[P]`** | Step backward one snapshot |
+| **`[R]`** | Reset to Step 1 |
+| **`[1]`** | Switch to **Bubble Sort** |
+| **`[2]`** | Switch to **Selection Sort** |
+| **`[3]`** | Switch to **Insertion Sort** |
+| **`[4]`** | Switch to **Merge Sort** |
+| **`[5]`** | Switch to **Quick Sort** |
+| **`[M]`** | Cycle to the next algorithm in order |
+| **`[G]`** | Generate and load a new randomized input array |
+| **`[+]` / `[-]`** | Increase / Decrease playback speed |
+| **`[Q]` / `Ctrl+C`** | Cleanly exit back to your prompt |
+
 *(Note: On Windows PowerShell, if typing `npm` gives an execution policy error, always use `npm.cmd`)*
 
 ---
 
-## 9. What We Will Build in Milestone 2
+## 9. How Milestone 2 Works: The Playback Engine
 
-Now that our foundation (Milestone 1) is solid, here is what comes next in **Milestone 2**:
+In **Milestone 2**, we built the core engine that drives animations forward and backward while keeping all visual panels in 100% lockstep.
 
-1. **The Shared Timeline Engine (`src/engine/timeline.js`)**:
-   - A module that takes an array of step snapshots and manages the current position (`currentIndex`).
-2. **The Playback Controller (`src/engine/playbackController.js`)**:
-   - Manages the timer loop, play, pause, speed adjustments, and emitting events whenever the step changes.
-3. **Connecting Keyboard Shortcuts to the Engine**:
-   - Making `Space`, `→`, `←`, and `R` drive the highlighted code line in the CLI, matching what we already previewed in the browser!
+### The Architecture: Why Separate Timeline from Playback?
+In clean software design, we separate **Data State** from **Playback Timing**:
+1. **`Timeline` (`src/engine/timeline.js`)**:
+   - Acts like a video tape. It holds an array of snapshots and knows where the current "playhead" is (`currentIndex`).
+   - It has simple, pure methods: `next()`, `previous()`, `reset()`, `goTo(index)`, `hasNext()`, and `hasPrevious()`.
+   - It doesn't know about timers, setInterval, or Blessed UI. It only cares about data and boundaries (never letting you step below 0 or beyond the last step).
+
+2. **`PlaybackController` (`src/engine/playbackController.js`)**:
+   - Acts like the remote control. It controls the `setInterval` timer loop.
+   - It handles `play()`, `pause()`, `togglePlay()`, `reset()`, and `setSpeed()`.
+   - **Key Safety Features**:
+     - *No duplicate loops*: If you press Play multiple times, it ignores repeated calls so your playback speed doesn't spiral out of control.
+     - *Automatic finish*: When playback reaches the final step, it automatically clears the timer and pauses.
+     - *Boundary rewind*: If you hit Play when already at the end, it gracefully rewinds to Step 1 and plays from the start.
+     - *Immediate speed changes*: Changing speed while playing dynamically re-arms the timer without interrupting playback.
+
+3. **UI Synchronization (`controller.onUpdate(...)` in `index.js`)**:
+   - The UI subscribes to the controller. Whenever a step changes:
+     1. The **Left Panel** calls `renderBars(snapshot.bars)` to redraw the ASCII bars with colors (`Comparing`, `Swapping`, `Sorted`).
+     2. The **Right Panel** calls `setCodeView(sampleCodeLines, snapshot.line, snapshot.explanation)` to place the `> ` pointer and yellow highlight on the executing code line.
+     3. The **Bottom Bar** calls `setStatus(...)` to update the step counter (`Step: 5/10`), comparisons, swaps, and speed.
+     4. Blessed renders the updated buffer to your terminal.
+   - Because all three calls happen in the same single update callback, **the code pointer and visualization can never fall out of sync**.
 
 ---
 
-*Take your time to read through this guide and inspect the code files. Whenever you feel comfortable and ready to move forward, let me know and we will begin Milestone 2!*
+## 10. How Future Algorithms Will Provide Snapshots
+
+In upcoming milestones, you will write algorithms like **Selection Sort**, **Insertion Sort**, **Binary Search**, **Breadth-First Search (BFS)**, and **AVL Trees**.
+
+Here is how any new algorithm plugs into this playback engine:
+
+### Step 1: Define the Source Code
+Write the algorithm code as an array of strings:
+```javascript
+export const binarySearchCode = [
+  "function binarySearch(arr, target) {",
+  "  let low = 0, high = arr.length - 1;",
+  "  while (low <= high) {",
+  "    const mid = Math.floor((low + high) / 2);",
+  "    if (arr[mid] === target) return mid;",
+  "    if (arr[mid] < target) low = mid + 1;",
+  "    else high = mid - 1;",
+  "  }",
+  "  return -1;",
+  "}"
+];
+```
+
+### Step 2: Record Snapshots During Execution
+Instead of simply executing the algorithm instantly, your algorithm function records a "snapshot" at each important operation:
+
+```javascript
+export function generateBinarySearchSnapshots(arr, target) {
+  const snapshots = [];
+  let low = 0;
+  let high = arr.length - 1;
+
+  // Snapshot 1: Function entry
+  snapshots.push({
+    line: 2, // Line 2 is executing
+    explanation: `Initialized search range: low = ${low}, high = ${high}`,
+    comparisons: 0,
+    elements: arr.map((val, idx) => ({
+      val,
+      status: (idx >= low && idx <= high) ? 'active-range' : 'dimmed'
+    }))
+  });
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+
+    // Snapshot 2: Inspecting midpoint
+    snapshots.push({
+      line: 4, // Line 4: Calculate mid
+      explanation: `Calculated midpoint at index ${mid} (value: ${arr[mid]})`,
+      comparisons: 1,
+      elements: arr.map((val, idx) => ({
+        val,
+        status: idx === mid ? 'comparing' : (idx >= low && idx <= high ? 'active-range' : 'dimmed')
+      }))
+    });
+
+    if (arr[mid] === target) {
+      // Snapshot 3: Target found!
+      snapshots.push({
+        line: 5,
+        explanation: `Target ${target} found at index ${mid}!`,
+        elements: arr.map((val, idx) => ({ val, status: idx === mid ? 'sorted' : 'dimmed' }))
+      });
+      break;
+    }
+    // ... continue for other branches
+  }
+
+  return snapshots;
+}
+```
+
+### Step 3: Pass Snapshots to Timeline
+```javascript
+const snapshots = generateBinarySearchSnapshots([1, 3, 5, 7, 9, 11], 7);
+const timeline = createTimeline(snapshots);
+const controller = createPlaybackController(timeline);
+```
+That's it! Because the playback engine only cares about `{ line, explanation, ... }`, **any algorithm in the world can be animated with zero changes to the playback engine**.
+
+---
+
+## 11. How Milestone 3 Works: The Sorting Algorithms Suite
+
+In **Milestone 3**, we implemented a comprehensive sorting algorithms suite under `src/algorithms/sorting/`:
+
+### 1. The Algorithm Registry (`src/algorithms/sorting/index.js`)
+All sorting algorithms share a common interface and are registered centrally:
+- **`sortingAlgorithms`**: Array of algorithm definitions.
+- **`getSortingAlgorithm(id)`**: Retrieves an algorithm by key (`'bubble'`, `'selection'`, `'insertion'`, `'merge'`, `'quick'`).
+- **`generateRandomArray(size, min, max)`**: Generates randomized numeric test data on demand.
+
+### 2. The Five Sorting Algorithms
+1. **Bubble Sort (`bubbleSort.js`)**:
+   - Compares adjacent pairs `arr[j]` and `arr[j+1]`.
+   - Swaps them if out of order so larger values "bubble" to the end.
+   - Highlights: `comparing` (yellow), `swapping` (magenta), `sorted` (green).
+
+2. **Selection Sort (`selectionSort.js`)**:
+   - Finds the minimum value across the unsorted subarray and places it at index `i`.
+   - Highlights the current candidate minimum as `pivot` (cyan ★) while inspecting elements in `comparing` (yellow).
+
+3. **Insertion Sort (`insertionSort.js`)**:
+   - Picks element `arr[i]` as the `key` and shifts preceding elements rightward until finding its correct sorted position.
+   - Highlights the key as `pivot` (cyan ★) and shifted elements as `swapping` (magenta ⇄).
+
+4. **Merge Sort (`mergeSort.js`)**:
+   - Divide-and-conquer algorithm splitting the array recursively at midpoints, then merging sorted halves.
+   - Highlights the active subarray range being merged and elements being copied into position.
+
+5. **Quick Sort (`quickSort.js`)**:
+   - Selects a pivot element (Lomuto partitioning scheme) and partitions the array into values smaller than pivot (left) and greater (right).
+   - Recursively sorts both sides. Highlights pivot in cyan (★) and swaps into position.
+
+### 3. Dynamic Algorithm Switcher in the CLI
+Pressing **`1`**, **`2`**, **`3`**, **`4`**, **`5`**, or **`M`** dynamically:
+- Pauses any running playback timer.
+- Re-generates snapshots for the newly chosen algorithm.
+- Updates the left panel title with time and space complexity metrics.
+- Replaces source code in the right panel and resets the playback timeline to Step 1.
+
+---
+
+## 12. Algorithm Comparison Matrix
+
+| Algorithm | Best Time | Average Time | Worst Time | Space | Stable? | Key Characteristic |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Bubble Sort** | $O(n)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ | Yes | Simple adjacent comparisons & bubble swaps. |
+| **Selection Sort** | $O(n^2)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ | No | Minimizes total number of write/swap operations. |
+| **Insertion Sort** | $O(n)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ | Yes | Extremely efficient on nearly-sorted data. |
+| **Merge Sort** | $O(n \log n)$ | $O(n \log n)$ | $O(n \log n)$ | $O(n)$ | Yes | Guaranteed $O(n \log n)$ performance with stable ordering. |
+| **Quick Sort** | $O(n \log n)$ | $O(n \log n)$ | $O(n^2)$ | $O(\log n)$ | No | Cache-friendly in-place partitioning; industry standard. |
+
+---
+
+## 13. What Comes Next in Milestone 4
+
+With the sorting suite and switcher complete, Milestone 4 will focus on:
+1. **Interactive Custom Array Input**:
+   - Allowing students to type their own numbers (e.g. `[12, 3, 45, 7]`) directly via a modal input box.
+2. **Step-Back Execution History Graph**:
+   - Visualizing the comparison vs swap timeline graph.
+3. **Graph Traversal Visualizations**:
+   - Introducing BFS and DFS on adjacency lists.

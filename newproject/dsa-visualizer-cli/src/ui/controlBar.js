@@ -63,6 +63,8 @@ export function createControlBar(screen) {
                     '{cyan-fg}[→]{/cyan-fg} Next │ ' +
                     '{cyan-fg}[←]{/cyan-fg} Prev │ ' +
                     '{cyan-fg}[R]{/cyan-fg} Reset │ ' +
+                    '{cyan-fg}[1-5/M]{/cyan-fg} Algo │ ' +
+                    '{cyan-fg}[G]{/cyan-fg} New Array │ ' +
                     '{cyan-fg}[+/-]{/cyan-fg} Speed │ ' +
                     '{red-fg}[Q]{/red-fg} Quit';
 
